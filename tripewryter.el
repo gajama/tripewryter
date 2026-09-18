@@ -82,6 +82,8 @@ If TEARDOWN is true, removes the tweaks instead."
         (electric-quote-local-mode 1)
         (von-count-mode 1)
         (aline-mode 1)
+        (face-remap-add-relative
+         'margin :background (modus-themes-get-color-value 'bg-main))
         (tripewryter-font-lock-hide-extra-spaces))
     (auto-fill-mode -1)
     (olivetti-mode -1)

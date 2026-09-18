@@ -1,10 +1,14 @@
 ;; -*- lexical-binding: t; -*-
 
-(defvar-local tripewryter--save-fill-column)
+(defvar-local tripewryter--remap-cookie)
+(defvar-local tripewryter--auto-fill-saved)
+(defvar-local tripewryter--variable-pitch-saved)
+(defvar-local tripewryter--electric-quote-saved)
+(defvar-local tripewryter--olivetti-saved)
+(defvar-local tripewryter--fill-column-saved)
+(defvar-local tripewryter--double-space-saved)
 
-(defvar-local tripewryter--save-double-spaces)
-
-(defvar double-spaces-regexp "\\(?:[!.?][]\"'.”’)}]*\\) \\( \\)\.")
+(defvar tripewryter-double-spaces-regexp "\\(?:[!.?][]\"'.”’)}]*\\) \\( \\)\.")
 
 ;;;###autoload
 (defun tripewryter-font-lock-hide-extra-spaces()
@@ -16,7 +20,7 @@ The main purpose of this tweak is so you can have two spaces after a
 period/full-stop, but they aren't displayed."
 
   (font-lock-add-keywords
-   'nil `((,double-spaces-regexp 1 '(face font-lock-warning-face invisible
+   'nil `((,tripewryter-double-spaces-regexp 1 '(face font-lock-warning-face invisible
    t)))))
 
 ;;;###autoload
@@ -26,7 +30,7 @@ period/full-stop, but they aren't displayed."
   "Undo the action of `tripewryter-font-lock-hide-extra-spaces'."
 
   (font-lock-remove-keywords
-   'nil `((,double-spaces-regexp 1 '(face font-lock-warning-face invisible
+   'nil `((,tripewryter-double-spaces-regexp 1 '(face font-lock-warning-face invisible
    t)))))
 
 (defun tripewryter--fixup-sentences ()
@@ -58,19 +62,23 @@ but probably OK."
   res))
 
 (defun tripewryter-setup(&optional teardown)
-  (interactive)
 
   "Enables various writing tweaks.
 
 If TEARDOWN is true, removes the tweaks instead."
 
+  (interactive)
+  
   (if (not teardown)
       (progn
-        (setq tripewryter--save-fill-column fill-column
-              tripewryter--save-double-spaces sentence-end-double-space)
-        (setq-local fill-column 76
-                    sentence-end-double-space t
-                    window-min-width 78)
+        (setq-local tripewryter--auto-fill-saved (and auto-fill-function 1)
+                    tripewryter--variable-pitch-saved (and buffer-face-mode 1)
+                    tripewryter--electric-quote-saved (and electric-quote-mode 1)
+                    tripewryter--olivetti-saved (and olivetti-mode 1)
+                    tripewryter--fill-column-saved fill-column
+                    tripewryter--double-space-saved sentence-end-double-space
+                    fill-column 76
+                    sentence-end-double-space t)
         (auto-fill-mode 1)
         (variable-pitch-mode 1)
         (olivetti-mode 1)
@@ -82,32 +90,40 @@ If TEARDOWN is true, removes the tweaks instead."
         (electric-quote-local-mode 1)
         (von-count-mode 1)
         (aline-mode 1)
-        (face-remap-add-relative
-         'margin :background (modus-themes-get-color-value 'bg-main))
-        (tripewryter-font-lock-hide-extra-spaces))
-    (auto-fill-mode -1)
-    (olivetti-mode -1)
+        (setq-local tripewryter--remap-cookie
+                    (face-remap-add-relative
+                     'margin :background (face-background 'default)))
+        (tripewryter-font-lock-hide-extra-spaces)
+        t)
+    (message "Tripewryter restoring saved values")
+    (auto-fill-mode (or tripewryter--auto-fill-saved -1))
+    (olivetti-mode (or tripewryter--olivetti-saved -1))
     (advice-remove 'window-min-size
                    #'tripewryter--window-min-size-override)
-    (variable-pitch-mode -1)
+    (variable-pitch-mode (or tripewryter--variable-pitch-saved -1))
     (remove-hook 'post-self-insert-hook #'tripewryter--fixup-sentences)
-    (electric-quote-local-mode -1)
+    (face-remap-remove-relative tripewryter--remap-cookie)
+    (electric-quote-local-mode (or tripewryter--electric-quote-saved -1))
     (von-count-mode -1)
     (aline-mode -1)
-    (setq-local fill-column tripewryter--save-fill-column
-                sentence-end-double-space tripewryter--save-double-spaces
-                tripewryter--save-fill-column nil
-                tripewryter--save-double-spaces nil)
-    (tripewryter-remove-font-lock-hide-extra-spaces)))
+    (setq-local fill-column tripewryter--fill-column-saved
+                sentence-end-double-space tripewryter--double-space-saved)
+    (tripewryter-remove-font-lock-hide-extra-spaces)
+    t))
 
 ;;;###autoload
 (define-minor-mode tripewryter-mode
 
-  "Enable various opinionated writing tweaks and modes."
+  "Enable various opinionated writing tweaks and modes.
+
+Requires 2 of my other modes: Aline, and Von Count, as well as Olivetti
+mode."
 
   :lighter nil
   (if tripewryter-mode
-      (tripewryter-setup)
-    (tripewryter-setup 'teardown)))
+      (and (tripewryter-setup)
+           (message "Tripewryter mode enabled in current buffer"))
+    (tripewryter-setup 'teardown)
+    (message "Tripewryter mode disabled in current buffer")))
 
 (provide 'tripewryter)

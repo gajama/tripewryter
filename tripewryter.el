@@ -6,6 +6,7 @@
 
 (defvar double-spaces-regexp "\\(?:[!.?][]\"'.”’)}]*\\) \\( \\)\.")
 
+;;;###autoload
 (defun tripewryter-font-lock-hide-extra-spaces()
   (interactive)
 
@@ -18,6 +19,7 @@ period/full-stop, but they aren't displayed."
    'nil `((,double-spaces-regexp 1 '(face font-lock-warning-face invisible
    t)))))
 
+;;;###autoload
 (defun tripewryter-remove-font-lock-hide-extra-spaces()
   (interactive)
 
